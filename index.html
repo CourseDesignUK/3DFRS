@@ -1,223 +1,207 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.3">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+<meta charset="UTF-8">
+<title>3D Viewer with Annotations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { margin:0; overflow:hidden; font-family:system-ui; background:#f2f2f2; }
+#ui {
+  position:fixed; top:10px; left:10px;
+  background:rgba(0,0,0,0.85);
+  padding:12px; border-radius:10px;
+  width:260px; color:white; z-index:10;
+}
+button, input { width:100%; margin-bottom:6px; }
+
+.annotation {
+  position:absolute;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  padding:4px 8px;
+  border-radius:12px;
+  font-size:12px;
+  white-space:nowrap;
+  cursor:pointer;
+  pointer-events:auto;
+}
+</style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1">&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1">&lt;title&gt;3D Viewer with Annotations&lt;/title&gt;</p>
-<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1">&lt;style&gt;</p>
-<p class="p1">body { margin:0; overflow:hidden; font-family:system-ui; background:#f2f2f2; }</p>
-<p class="p1">#ui {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>position:fixed; top:10px; left:10px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>background:rgba(0,0,0,0.85);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>padding:12px; border-radius:10px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>width:260px; color:white; z-index:10;</p>
-<p class="p1">}</p>
-<p class="p1">button, input { width:100%; margin-bottom:6px; }</p>
-<p class="p2"><br></p>
-<p class="p1">.annotation {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>position:absolute;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>background:rgba(0,0,0,0.8);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>color:white;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>padding:4px 8px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>border-radius:12px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>font-size:12px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>white-space:nowrap;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>cursor:pointer;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>pointer-events:auto;</p>
-<p class="p1">}</p>
-<p class="p1">&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;div id="ui"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="loadBtn"&gt;Load Chinook&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="rotateBtn"&gt;Rotate&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;p style="font-size:12px;opacity:.8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>Press &lt;b&gt;A&lt;/b&gt; to add annotations</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/p&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"&gt;&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1">const scene = new THREE.Scene();</p>
-<p class="p1">scene.background = new THREE.Color(0xf2f2f2);</p>
-<p class="p2"><br></p>
-<p class="p1">const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);</p>
-<p class="p1">camera.position.set(0,1.5,3);</p>
-<p class="p2"><br></p>
-<p class="p1">const renderer = new THREE.WebGLRenderer({antialias:true});</p>
-<p class="p1">renderer.setSize(innerWidth, innerHeight);</p>
-<p class="p1">document.body.appendChild(renderer.domElement);</p>
-<p class="p2"><br></p>
-<p class="p1">const controls = new THREE.OrbitControls(camera, renderer.domElement);</p>
-<p class="p1">controls.enableDamping = true;</p>
-<p class="p2"><br></p>
-<p class="p1">scene.add(new THREE.AmbientLight(0xffffff,0.3));</p>
-<p class="p1">const light = new THREE.DirectionalLight(0xffffff,1);</p>
-<p class="p1">light.position.set(5,5,5);</p>
-<p class="p1">scene.add(light);</p>
-<p class="p2"><br></p>
-<p class="p1">// Camera headlight</p>
-<p class="p1">const camLight = new THREE.PointLight(0xffffff,0.6,10);</p>
-<p class="p1">camera.add(camLight);</p>
-<p class="p1">scene.add(camera);</p>
-<p class="p2"><br></p>
-<p class="p1">let model = null;</p>
-<p class="p1">let autoRotate = false;</p>
-<p class="p1">let authorMode = false;</p>
-<p class="p2"><br></p>
-<p class="p1">const raycaster = new THREE.Raycaster();</p>
-<p class="p1">const mouse = new THREE.Vector2();</p>
-<p class="p2"><br></p>
-<p class="p1">// Annotation system</p>
-<p class="p1">const annotations = [];</p>
-<p class="p1">const annotationLayer = document.createElement('div');</p>
-<p class="p1">annotationLayer.style.position = 'absolute';</p>
-<p class="p1">annotationLayer.style.top = 0;</p>
-<p class="p1">annotationLayer.style.left = 0;</p>
-<p class="p1">annotationLayer.style.pointerEvents = 'none';</p>
-<p class="p1">document.body.appendChild(annotationLayer);</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- LOAD MODEL + JSON ----------</p>
-<p class="p1">async function loadChinook() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>new THREE.GLTFLoader().load(</p>
-<p class="p1"><span class="Apple-converted-space">    </span>'models/chinook.glb',</p>
-<p class="p1"><span class="Apple-converted-space">    </span>async gltf =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>model = gltf.scene;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>scene.add(model);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>centerAndScale(model);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>const data = await fetch('annotations/chinook.json').then(r=&gt;r.json());</p>
-<p class="p1"><span class="Apple-converted-space">      </span>createAnnotations(data.annotations);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function centerAndScale(obj){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const box = new THREE.Box3().setFromObject(obj);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const size = new THREE.Vector3();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>box.getSize(size);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const scale = 1.5 / Math.max(size.x,size.y,size.z);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>obj.scale.setScalar(scale);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>box.setFromObject(obj);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const c = new THREE.Vector3();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>box.getCenter(c);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>obj.position.sub(c);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- ANNOTATIONS ----------</p>
-<p class="p1">function createAnnotations(data){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>data.forEach(a=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const el = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>el.className = 'annotation';</p>
-<p class="p1"><span class="Apple-converted-space">    </span>el.innerText = a.title;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>el.onclick = ()=&gt; flyTo(a.position);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>annotationLayer.appendChild(el);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>annotations.push({</p>
-<p class="p1"><span class="Apple-converted-space">      </span>position: new THREE.Vector3().fromArray(a.position),</p>
-<p class="p1"><span class="Apple-converted-space">      </span>element: el</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function updateAnnotations(){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(!model) return;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>annotations.forEach(a=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const world = model.localToWorld(a.position.clone());</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Occlusion test</p>
-<p class="p1"><span class="Apple-converted-space">    </span>raycaster.set(camera.position, world.clone().sub(camera.position).normalize());</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const hits = raycaster.intersectObject(model,true);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(hits.length &amp;&amp; hits[0].distance &lt; camera.position.distanceTo(world)){</p>
-<p class="p1"><span class="Apple-converted-space">      </span>a.element.style.display='none';</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>world.project(camera);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const x = (world.x*0.5+0.5)*innerWidth;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const y = (-world.y*0.5+0.5)*innerHeight;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>a.element.style.transform =</p>
-<p class="p1"><span class="Apple-converted-space">      </span>`translate(-50%,-50%) translate(${x}px,${y}px)`;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>a.element.style.display='block';</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- AUTHOR MODE ----------</p>
-<p class="p1">window.addEventListener('keydown',e=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(e.key.toLowerCase()==='a'){</p>
-<p class="p1"><span class="Apple-converted-space">    </span>authorMode = !authorMode;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>alert(authorMode ? 'Author mode ON' : 'Author mode OFF');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">renderer.domElement.addEventListener('click',e=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(!authorMode || !model) return;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>mouse.x = (e.clientX/innerWidth)*2-1;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>mouse.y = -(e.clientY/innerHeight)*2+1;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>raycaster.setFromCamera(mouse,camera);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const hits = raycaster.intersectObject(model,true);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(!hits.length) return;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const local = model.worldToLocal(hits[0].point.clone());</p>
-<p class="p1"><span class="Apple-converted-space">  </span>console.log('ANNOTATION POSITION:', local.toArray());</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>alert('Position logged to console.\nCopy into chinook.json');</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- CAMERA FLY TO ----------</p>
-<p class="p1">function flyTo(posArr){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const target = new THREE.Vector3().fromArray(posArr);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const world = model.localToWorld(target.clone());</p>
-<p class="p1"><span class="Apple-converted-space">  </span>controls.target.copy(world);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>camera.position.lerp(</p>
-<p class="p1"><span class="Apple-converted-space">    </span>world.clone().add(new THREE.Vector3(0,1,2)),</p>
-<p class="p1"><span class="Apple-converted-space">    </span>0.15</p>
-<p class="p1"><span class="Apple-converted-space">  </span>);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- UI ----------</p>
-<p class="p1">document.getElementById('loadBtn').onclick = loadChinook;</p>
-<p class="p1">document.getElementById('rotateBtn').onclick = ()=&gt;autoRotate=!autoRotate;</p>
-<p class="p2"><br></p>
-<p class="p1">// ---------- LOOP ----------</p>
-<p class="p1">function animate(){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>requestAnimationFrame(animate);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(autoRotate &amp;&amp; model) model.rotation.y += 0.01;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>controls.update();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>updateAnnotations();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>renderer.render(scene,camera);</p>
-<p class="p1">}</p>
-<p class="p1">animate();</p>
-<p class="p2"><br></p>
-<p class="p1">window.addEventListener('resize',()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>camera.aspect = innerWidth/innerHeight;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>camera.updateProjectionMatrix();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>renderer.setSize(innerWidth,innerHeight);</p>
-<p class="p1">});</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<div id="ui">
+  <button id="loadBtn">Load Chinook</button>
+  <button id="rotateBtn">Rotate</button>
+  <p style="font-size:12px;opacity:.8">
+    Press <b>A</b> to add annotations
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf2f2f2);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(0,1.5,3);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.3));
+const light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(5,5,5);
+scene.add(light);
+
+// Camera headlight
+const camLight = new THREE.PointLight(0xffffff,0.6,10);
+camera.add(camLight);
+scene.add(camera);
+
+let model = null;
+let autoRotate = false;
+let authorMode = false;
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Annotation system
+const annotations = [];
+const annotationLayer = document.createElement('div');
+annotationLayer.style.position = 'absolute';
+annotationLayer.style.top = 0;
+annotationLayer.style.left = 0;
+annotationLayer.style.pointerEvents = 'none';
+document.body.appendChild(annotationLayer);
+
+// ---------- LOAD MODEL + JSON ----------
+async function loadChinook() {
+  new THREE.GLTFLoader().load(
+    'models/chinook.glb',
+    async gltf => {
+      model = gltf.scene;
+      scene.add(model);
+      centerAndScale(model);
+
+      const data = await fetch('annotations/chinook.json').then(r=>r.json());
+      createAnnotations(data.annotations);
+    }
+  );
+}
+
+function centerAndScale(obj){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const scale = 1.5 / Math.max(size.x,size.y,size.z);
+  obj.scale.setScalar(scale);
+  box.setFromObject(obj);
+  const c = new THREE.Vector3();
+  box.getCenter(c);
+  obj.position.sub(c);
+}
+
+// ---------- ANNOTATIONS ----------
+function createAnnotations(data){
+  data.forEach(a=>{
+    const el = document.createElement('div');
+    el.className = 'annotation';
+    el.innerText = a.title;
+    el.onclick = ()=> flyTo(a.position);
+    annotationLayer.appendChild(el);
+
+    annotations.push({
+      position: new THREE.Vector3().fromArray(a.position),
+      element: el
+    });
+  });
+}
+
+function updateAnnotations(){
+  if(!model) return;
+
+  annotations.forEach(a=>{
+    const world = model.localToWorld(a.position.clone());
+
+    // Occlusion test
+    raycaster.set(camera.position, world.clone().sub(camera.position).normalize());
+    const hits = raycaster.intersectObject(model,true);
+    if(hits.length && hits[0].distance < camera.position.distanceTo(world)){
+      a.element.style.display='none';
+      return;
+    }
+
+    world.project(camera);
+    const x = (world.x*0.5+0.5)*innerWidth;
+    const y = (-world.y*0.5+0.5)*innerHeight;
+
+    a.element.style.transform =
+      `translate(-50%,-50%) translate(${x}px,${y}px)`;
+    a.element.style.display='block';
+  });
+}
+
+// ---------- AUTHOR MODE ----------
+window.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase()==='a'){
+    authorMode = !authorMode;
+    alert(authorMode ? 'Author mode ON' : 'Author mode OFF');
+  }
+});
+
+renderer.domElement.addEventListener('click',e=>{
+  if(!authorMode || !model) return;
+
+  mouse.x = (e.clientX/innerWidth)*2-1;
+  mouse.y = -(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits = raycaster.intersectObject(model,true);
+  if(!hits.length) return;
+
+  const local = model.worldToLocal(hits[0].point.clone());
+  console.log('ANNOTATION POSITION:', local.toArray());
+
+  alert('Position logged to console.\nCopy into chinook.json');
+});
+
+// ---------- CAMERA FLY TO ----------
+function flyTo(posArr){
+  const target = new THREE.Vector3().fromArray(posArr);
+  const world = model.localToWorld(target.clone());
+  controls.target.copy(world);
+
+  camera.position.lerp(
+    world.clone().add(new THREE.Vector3(0,1,2)),
+    0.15
+  );
+}
+
+// ---------- UI ----------
+document.getElementById('loadBtn').onclick = loadChinook;
+document.getElementById('rotateBtn').onclick = ()=>autoRotate=!autoRotate;
+
+// ---------- LOOP ----------
+function animate(){
+  requestAnimationFrame(animate);
+  if(autoRotate && model) model.rotation.y += 0.01;
+  controls.update();
+  updateAnnotations();
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+</script>
 </body>
 </html>
