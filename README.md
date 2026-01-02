@@ -1,1 +1,1 @@
-Webpage to displat 3d models alongside firefighter responce cards
+Webpage to display 3d models alongside firefighter responce cards
