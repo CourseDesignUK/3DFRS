@@ -1,152 +1,121 @@
-!DOCTYPE html> 
-<html lang="en"> 
-<head> 
-<meta charset="UTF-8" /> 
-<title>3D Aircraft Viewer & Digital Records</title> 
-<meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
-<style> 
-:root { --panel-bg: #1a1a1a; --accent: #e74c3c; }
-body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #000; }
-#main-container { display: flex; width: 100vw; height: 100vh; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-#left-section { flex: 1 1 auto; position: relative; background: #d0e4f5; overflow: hidden; }
-#right-section { width: 50%; position: relative; background: var(--panel-bg); display: flex; flex-direction: column; overflow: hidden; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; border-left: 2px solid #333; }
-#main-container.panel-hidden #right-section { width: 0%; border-left: 0px solid transparent; opacity: 0; pointer-events: none; }
-#ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85); padding: 12px; border-radius: 10px; width: 220px; color: #fff; z-index: 20; transition: transform 0.4s ease, opacity 0.4s ease; }
-#ui.hidden { transform: translateX(-110%); opacity: 0; }
-#viewer-container { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; background: #222; }
-#document-viewer { width: 100%; height: auto; min-height: 100%; border: none; object-fit: contain; }
-#nav-bar { background: #000; padding: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; z-index: 10; }
-.nav-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; cursor: pointer; font-size: 10px; font-weight: bold; border-radius: 4px; transition: all 0.2s; }
-.nav-btn:hover { background: var(--accent); border-color: white; }
-button, select { width: 100%; margin-bottom: 8px; cursor: pointer; padding: 8px; border-radius: 4px; border: none; font-size: 11px; }
-#xrayBtn { background: #2c3e50; color: white; font-weight: bold; }
-#xrayBtn.active { background: var(--accent); }
-#togglePanelBtn { background: #34495e; color: white; border: 1px solid rgba(255,255,255,0.1); }
-</style> 
-</head> 
-<body> 
-<div id="main-container">
-  <div id="left-section">
-    <div id="ui"> 
-      <select id="modelSelector"></select> 
-      <button id="xrayBtn">X-RAY: OFF</button> 
-      <button id="rotateBtn">Toggle Rotation</button> 
-      <button id="togglePanelBtn">Hide AQRC</button>
-      <div id="info" style="font-size: 10px; margin-top: 5px; border-top: 1px solid #444; padding-top: 8px; color: #aaa;">Select aircraft.</div> 
-    </div> 
-  </div>
-  <div id="right-section">
-    <div id="nav-bar">
-      <button class="nav-btn" id="prevBtn">❮ PREV RECORD</button>
-      <button class="nav-btn" id="nextBtn">NEXT RECORD ❯</button>
-    </div>
-    <div id="viewer-container">
-      <img id="document-viewer" src="" alt="Select an aircraft to load records">
-    </div>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pseudo-3D Model Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #video { 
+            position: absolute; 
+            bottom: 10px; 
+            right: 10px; 
+            width: 120px; 
+            transform: scaleX(-1); 
+            border-radius: 8px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline></video>
+    
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
+        import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+        import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js";
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script> 
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script> 
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script> 
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/environments/RoomEnvironment.js"></script> 
+        const video = document.getElementById("video");
+        let scene, camera, renderer, faceLandmarker, model;
 
-<script> 
-const BASE_URL = "https://cdn.jsdelivr.net/gh/CourseDesignUK/3DFRS/Models/";
+        async function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
 
-const MODELS = { 
-  a400m: { name: "Airbus A400M Atlas", url: BASE_URL + "A400M.glb", docs: Array.from({length: 9}, (_, i) => BASE_URL + `A400M/${i+1}.jpg`) },
-  apache: { name: "AH-64 Apache", url: BASE_URL + "boeing_ah_64d_apache_combat_helicopter.glb", docs: [] },
-  hawk: { name: "BAe Hawk", url: BASE_URL + "bae_hawk.glb", docs: [] },
-  ec135: { name: "Eurocopter EC135", url: BASE_URL + "ec135.glb", docs: [] },
-  ec145: { name: "Eurocopter EC145", url: BASE_URL + "ec145.glb", docs: [] },
-  airseeker: { name: "RC-135W Airseeker", url: BASE_URL + "airseeker.glb", docs: [] },
-  // Fixed underscores: bell_boeing_v__22 (Double underscore before 22)
-  osprey: { name: "V-22 Osprey", url: BASE_URL + "bell_boeing_v_22_osprey_military_helicopter.glb", docs: [] },
-  awacs: { name: "Boeing E-767 AWACS", url: BASE_URL + "boeing_e_767_awacs.glb", docs: [] },
-  wedgetail: { name: "Boeing E-7 Wedgetail", url: BASE_URL + "boeing_e_7_wedgetail_aewc.glb", docs: [] },
-  p8: { name: "Boeing P-8 Poseidon", url: BASE_URL + "boeing_p_8_poseidon.glb", docs: Array.from({length: 10}, (_, i) => BASE_URL + `Poseidon/${i+1}.jpg`) },
-  chinook: { name: "Boeing CH-47 Chinook", url: BASE_URL + "chinook.glb", docs: Array.from({length: 14}, (_, i) => BASE_URL + `Chinook/${i+1}.jpg`) },
-  f35: { name: "Lockheed Martin F-35", url: BASE_URL + "f35.glb", docs: Array.from({length: 7}, (_, i) => BASE_URL + `F35IPDF/${i+1}.jpg`) },
-  protector: { name: "Protector RG1", url: BASE_URL + "protector.glb", docs: [] },
-  typhoon: { name: "Eurofighter Typhoon", url: BASE_URL + "typhoon.glb", docs: Array.from({length: 9}, (_, i) => BASE_URL + `Typhoon/${i+1}.jpg`) }
-}; 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-const leftSection = document.getElementById('left-section');
-const mainContainer = document.getElementById('main-container');
-const scene = new THREE.Scene(); 
-const camera = new THREE.PerspectiveCamera(60, leftSection.clientWidth / leftSection.clientHeight, 0.1, 1000); 
-camera.position.set(0, 2, 5); 
-const renderer = new THREE.WebGLRenderer({antialias:true}); 
-renderer.setPixelRatio(window.devicePixelRatio); 
-renderer.setSize(leftSection.clientWidth, leftSection.clientHeight); 
-renderer.outputEncoding = THREE.sRGBEncoding; 
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2; 
-leftSection.appendChild(renderer.domElement); 
-const controls = new THREE.OrbitControls(camera, renderer.domElement); 
-controls.enableDamping = true; 
-const pmrem = new THREE.PMREMGenerator(renderer); 
-scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture; 
-const lightBlue = new THREE.Color(0xd0e4f5);
-const darkBg = new THREE.Color(0x020202); 
-scene.background = lightBlue; 
-scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            const spot = new THREE.SpotLight(0xffffff, 2);
+            spot.position.set(5, 10, 5);
+            scene.add(ambient, spot);
 
-let currentModel, autoRotate = true, xrayActive = false, materials = new Map();
-let currentDocIndex = 0, currentDocList = [];
+            // Load Model
+            const loader = new GLTFLoader();
+            loader.load('./models/model.glb', (gltf) => {
+                model = gltf.scene;
+                
+                // Calculate scale to fit screen
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                
+                // Set scale and center
+                const scale = 3.5 / maxDim; // Adjust constant for zoom preference
+                model.scale.setScalar(scale);
+                model.position.sub(center.multiplyScalar(scale));
+                
+                scene.add(model);
+            });
 
-document.getElementById('togglePanelBtn').onclick = function() {
-  mainContainer.classList.toggle('panel-hidden');
-  this.innerText = mainContainer.classList.contains('panel-hidden') ? "Show AQRC" : "Hide AQRC";
-  setTimeout(onWindowResize, 500); 
-};
+            // MediaPipe Setup
+            const filesetResolver = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/models");
+            faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+                baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task` },
+                runningMode: "VIDEO"
+            });
 
-function updateViewer(index) {
-  const viewerEl = document.getElementById('document-viewer');
-  if (!currentDocList || currentDocList.length === 0) { viewerEl.src = ""; viewerEl.alt = "Records not available."; return; }
-  if (index >= currentDocList.length) currentDocIndex = 0; else if (index < 0) currentDocIndex = currentDocList.length - 1; else currentDocIndex = index;
-  viewerEl.src = currentDocList[currentDocIndex];
-}
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.addEventListener("loadeddata", () => requestAnimationFrame(update));
 
-document.getElementById('nextBtn').onclick = () => updateViewer(currentDocIndex + 1);
-document.getElementById('prevBtn').onclick = () => updateViewer(currentDocIndex - 1);
+            window.addEventListener('resize', onWindowResize);
+        }
 
-const uiElement = document.getElementById("ui");
-let hideTimer;
-function resetTimer() { uiElement.classList.remove("hidden"); clearTimeout(hideTimer); hideTimer = setTimeout(() => uiElement.classList.add("hidden"), 5000); }
-leftSection.addEventListener("mousemove", (e) => { if (e.clientX < 150) resetTimer(); });
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-function loadModel(key){ 
-  const data = MODELS[key]; if(!data) return; if(currentModel) scene.remove(currentModel); materials.clear();
-  document.getElementById("info").innerHTML = "<em>Loading...</em>";
-  new THREE.GLTFLoader().load(data.url + "?t=" + Date.now(), gltf => { 
-    currentModel = gltf.scene; scene.add(currentModel); 
-    const box = new THREE.Box3().setFromObject(currentModel); 
-    const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3()), scale = 3.5 / Math.max(size.x, size.y, size.z);
-    currentModel.scale.setScalar(scale); currentModel.position.sub(center.multiplyScalar(scale)); 
-    currentModel.traverse(o => { if(o.isMesh) { o.material.side = THREE.DoubleSide; materials.set(o.uuid, o.material.clone()); } }); 
-    document.getElementById("info").innerHTML = `<strong>${data.name}</strong>`;
-  }, undefined, error => { 
-    console.error("Critical Load Error:", data.url, error);
-    document.getElementById("info").innerHTML = `<span style="color:red">Error: check Console (F12)</span>`;
-  });
-  currentDocList = data.docs; currentDocIndex = 0; updateViewer(0);
-} 
+        function update() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const results = faceLandmarker.detectForVideo(video, performance.now());
+                
+                if (results.faceLandmarks && results.faceLandmarks[0]) {
+                    const nose = results.faceLandmarks[0][1]; // Nose tip landmark
+                    
+                    // Map nose coordinates to camera position (inverted X for mirror)
+                    const targetX = (0.5 - nose.x) * 4;
+                    const targetY = (0.5 - nose.y) * 4;
 
-const selector = document.getElementById("modelSelector");
-selector.innerHTML = `<option value="">-- SELECT AIRCRAFT --</option>` + Object.entries(MODELS).map(([k,v]) => `<option value="${k}">${v.name}</option>`).join("");
-selector.onchange = e => e.target.value && loadModel(e.target.value);
+                    // Interpolation for smooth motion
+                    camera.position.x += (targetX - camera.position.x) * 0.1;
+                    camera.position.y += (targetY - camera.position.y) * 0.1;
+                    camera.lookAt(0, 0, 0);
 
-document.getElementById("xrayBtn").onclick = function() {
-  if(!currentModel) return; xrayActive = !xrayActive; this.classList.toggle("active", xrayActive); this.innerText = xrayActive ? "X-RAY: ON" : "X-RAY: OFF";
-  scene.background = xrayActive ? darkBg : lightBlue;
-  currentModel.traverse(o => { if(o.isMesh) o.material = xrayActive ? new THREE.MeshPhysicalMaterial({ transmission: 0.9, thickness: 0.8, transparent: true, opacity: 0.5, color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.6, roughness: 0 }) : materials.get(o.uuid); });
-};
-document.getElementById("rotateBtn").onclick = () => { autoRotate = !autoRotate; };
-function onWindowResize() { renderer.setSize(leftSection.clientWidth, leftSection.clientHeight); camera.aspect = leftSection.clientWidth / leftSection.clientHeight; camera.updateProjectionMatrix(); }
-function animate() { requestAnimationFrame(animate); controls.update(); if(autoRotate && currentModel) currentModel.rotation.y += 0.005; renderer.render(scene, camera); } 
-animate(); window.addEventListener("resize", onWindowResize);
-</script> 
-</body> 
+                    if (model) {
+                        model.rotation.y = camera.position.x * 0.1;
+                        model.rotation.x = -camera.position.y * 0.1;
+                    }
+                }
+            }
+            renderer.render(scene, camera);
+            requestAnimationFrame(update);
+        }
+
+        init();
+    </script>
+</body>
 </html>
